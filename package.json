@@ -10,7 +10,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "SEE LICENSE IN LICENSE",
   "type": "commonjs",
   "dependencies": {
     "googleapis": "^173.0.0"
