@@ -165,3 +165,17 @@ npm run pack
 npm run dist
 ```
 The output installers will be created in the `dist/` directory.
+
+---
+
+## 📜 Third-Party Licenses & Attributions
+
+This application uses the following open-source packages and fonts:
+
+*   **[Electron](https://github.com/electron/electron)** (MIT License) - Cross-platform desktop application shell.
+*   **[Google APIs Node.js Client (googleapis)](https://github.com/googleapis/google-api-nodejs-client)** (Apache License 2.0) - Node.js client library for using Google APIs.
+*   **[electron-builder](https://github.com/electron-userland/electron-builder)** (MIT License) - Complete solution to package and build ready-for-distribution Electron apps.
+*   **[Outfit Font](https://fonts.google.com/specimen/Outfit)** (SIL Open Font License 1.1) - Geometric sans-serif typeface used for branding headers.
+*   **[Plus Jakarta Sans Font](https://fonts.google.com/specimen/Plus+Jakarta+Sans)** (SIL Open Font License 1.1) - Modern sans-serif font used for UI body text.
+
+For full license agreements, please refer to the respective official repositories.
