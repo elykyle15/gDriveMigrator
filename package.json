@@ -1,0 +1,46 @@
+{
+  "name": "movetosharedrive",
+  "version": "1.0.0",
+  "description": "Recursively scan Google Drive folders or Shared Drives, filter files by owner email, and transfer them into a Shared Drive.",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "googleapis": "^173.0.0"
+  },
+  "devDependencies": {
+    "electron": "^42.4.0",
+    "electron-builder": "^26.15.2"
+  },
+  "build": {
+    "appId": "com.googledrive.movetosharedrive",
+    "productName": "GDriveMoveToShareDrive",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*",
+      "package.json"
+    ],
+    "mac": {
+      "category": "public.app-category.utilities",
+      "target": [
+        "dmg"
+      ]
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ]
+    }
+  }
+}

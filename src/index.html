@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src 'self'; img-src 'self' data:;">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Google Drive Transfer Utility</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+  <div class="app-container">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="brand">
+          <svg class="brand-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M16 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+            <path d="M18 14V8h-6" />
+            <path d="M21 3l-9 9" />
+          </svg>
+          <span class="brand-name">G-Drive Migrator</span>
+        </div>
+      </div>
+
+      <nav class="nav-menu">
+        <button class="nav-item active" data-tab="connect">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+            <circle cx="8.5" cy="7" r="4" />
+            <polyline points="17 11 19 13 23 9" />
+          </svg>
+          Connect & Paths
+        </button>
+        <button class="nav-item" data-tab="scan" id="nav-scan" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8" />
+            <line x1="21" y1="21" x2="16.65" y2="16.65" />
+          </svg>
+          Scan & Filter
+        </button>
+        <button class="nav-item" data-tab="transfer" id="nav-transfer" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+          </svg>
+          Transfer Queue
+        </button>
+        <button class="nav-item" data-tab="settings">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+          </svg>
+          Settings
+        </button>
+      </nav>
+
+      <div class="sidebar-footer">
+        <a href="https://buymeacoffee.com/elykyle15y" target="_blank" class="tip-widget hidden" id="tip-link">
+          <div class="tip-icon-container">
+            <svg class="tip-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 8h1a4 4 0 0 1 0 8h-1" />
+              <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" />
+              <line x1="6" y1="1" x2="6" y2="4" />
+              <line x1="10" y1="1" x2="10" y2="4" />
+              <line x1="14" y1="1" x2="14" y2="4" />
+            </svg>
+          </div>
+          <div class="tip-content">
+            <span class="tip-title">Support the Dev</span>
+            <span class="tip-text">Since literally everything asks for a tip now... 😉</span>
+          </div>
+        </a>
+        <div class="connection-status-pill disconnected" id="status-pill">
+          <span class="status-dot"></span>
+          <span class="status-text">Disconnected</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Panel -->
+    <main class="content-panel" id="main-content">
+      <!-- Checkpoint Resume Banner -->
+      <div id="checkpoint-banner" class="checkpoint-banner hidden">
+        <div class="checkpoint-banner-content">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20" style="color: var(--color-warning);">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+            <line x1="12" y1="9" x2="12" y2="13" />
+            <line x1="12" y1="17" x2="12.01" y2="17" />
+          </svg>
+          <span id="checkpoint-banner-text">An interrupted transfer was detected.</span>
+        </div>
+        <div class="checkpoint-banner-actions">
+          <button class="btn btn-sm btn-primary" id="btn-resume-checkpoint">Resume</button>
+          <button class="btn btn-sm btn-secondary danger" id="btn-discard-checkpoint">Discard</button>
+        </div>
+      </div>
+      
+      <!-- 1. Connect & Paths Tab -->
+      <section id="tab-connect" class="tab-content active">
+        <div class="view-header">
+          <h1 class="view-title">Connect & Locations</h1>
+          <p class="view-subtitle">Authenticate your account and configure the source and destination paths.</p>
+        </div>
+
+        <div class="cards-grid">
+          <!-- Auth Card -->
+          <div class="card auth-card" id="auth-status-card" style="grid-column: span 2;">
+            <div class="auth-card-unauth">
+              <div class="card-icon-container warning">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+              </div>
+              <h3>Authentication Required</h3>
+              <p>Please log in using Google OAuth to scan and transfer files securely.</p>
+              <button class="btn btn-primary" id="btn-login">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M13.8 12H3" />
+                </svg>
+                Sign in with Google
+              </button>
+            </div>
+
+            <div class="auth-card-auth hidden">
+              <div class="user-profile">
+                <div class="user-avatar" id="user-avatar-initials">G</div>
+                <div class="user-info">
+                  <h3 id="user-display-name">Loading Profile...</h3>
+                  <p id="user-email-address">...</p>
+                </div>
+              </div>
+              <div class="auth-actions">
+                <button class="btn btn-secondary" id="btn-logout">Sign Out</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Source Selector Card -->
+          <div class="card selector-card disabled" id="source-selector-card">
+            <div class="card-header">
+              <h2 class="card-title">Select Source Location</h2>
+              <p class="card-subtitle">Choose the source directory or Shared Drive containing files to scan.</p>
+            </div>
+
+            <div class="tabs-slider-container" role="tablist">
+              <div class="tabs-slider">
+                <button class="slider-tab active" id="source-tab-custom" role="tab" aria-selected="true">Custom ID</button>
+                <button class="slider-tab" id="source-tab-list" role="tab" aria-selected="false">My Shared Drives</button>
+                <button class="slider-tab" id="source-tab-shared" role="tab" aria-selected="false">Shared With Me</button>
+              </div>
+            </div>
+
+            <div class="selector-form active" id="source-form-custom">
+              <div class="form-group">
+                <label for="source-id-input">Source Folder ID / Shared Drive ID</label>
+                <input type="text" id="source-id-input" placeholder="e.g. 0A1b2c3d4e5f6g..." autocomplete="off">
+                <small class="form-help">Enter a specific folder/drive ID, or leave blank/enter "root" for My Drive.</small>
+              </div>
+            </div>
+
+            <div class="selector-form hidden" id="source-form-list">
+              <div class="form-group">
+                <label for="source-list-select">Select Shared Drive</label>
+                <div class="select-wrapper">
+                  <select id="source-list-select">
+                    <option value="" disabled selected>Loading drives...</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <button class="btn btn-accent w-full" id="btn-verify-source" style="margin-top: 12px;">Verify & Set Source</button>
+            <div class="path-status-display hidden" id="source-status-display"></div>
+          </div>
+
+          <!-- Destination Selector Card -->
+          <div class="card selector-card disabled" id="dest-selector-card">
+            <div class="card-header">
+              <h2 class="card-title">Select Destination Location</h2>
+              <p class="card-subtitle">Choose the target Shared Drive or folder where eligible files will be moved.</p>
+            </div>
+
+            <div class="tabs-slider-container" role="tablist">
+              <div class="tabs-slider">
+                <button class="slider-tab active" id="dest-tab-custom" role="tab" aria-selected="true">Custom ID</button>
+                <button class="slider-tab" id="dest-tab-list" role="tab" aria-selected="false">My Shared Drives</button>
+              </div>
+            </div>
+
+            <div class="selector-form active" id="dest-form-custom">
+              <div class="form-group">
+                <label for="dest-id-input">Destination Folder / Shared Drive ID</label>
+                <input type="text" id="dest-id-input" placeholder="e.g. 0A1b2c3d4e5f6g..." autocomplete="off">
+                <small class="form-help">Must be a Shared Drive or a directory inside one to transfer ownership.</small>
+              </div>
+            </div>
+
+            <div class="selector-form hidden" id="dest-form-list">
+              <div class="form-group">
+                <label for="dest-list-select">Select Shared Drive</label>
+                <div class="select-wrapper">
+                  <select id="dest-list-select">
+                    <option value="" disabled selected>Loading drives...</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+            <button class="btn btn-accent w-full" id="btn-verify-dest" style="margin-top: 12px;">Verify & Set Destination</button>
+            <div class="path-status-display hidden" id="dest-status-display"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 2. Scan & Filter Tab -->
+      <section id="tab-scan" class="tab-content">
+        <div class="view-header flex-row justify-between align-center">
+          <div>
+            <h1 class="view-title">Scan & Filter Files</h1>
+            <p class="view-subtitle">Recursively identify files matching the email criteria, review them, and start migration.</p>
+          </div>
+        </div>
+
+        <div class="explorer-layout">
+          <!-- Filter Inputs Card -->
+          <div class="card filter-card">
+            <h2 class="card-title" style="margin-bottom: 12px;">Email Filter Criteria</h2>
+            <div class="form-row flex-row align-center gap-16" style="margin-bottom: 0;">
+              <div class="form-group w-third">
+                <label for="filter-type">Filter Mode</label>
+                <div class="select-wrapper">
+                  <select id="filter-type">
+                    <option value="starts-with" selected>Starts with</option>
+                    <option value="ends-with">Ends with</option>
+                    <option value="exact">Exact match</option>
+                    <option value="contains">Contains</option>
+                    <option value="regex">Regex pattern</option>
+                  </select>
+                </div>
+              </div>
+
+              <div class="form-group" style="flex-grow: 1; margin-bottom: 0;">
+                <label for="filter-pattern">Owner Email Pattern <span style="font-weight: 400; color: var(--text-muted); text-transform: none; letter-spacing: 0;">(optional — leave blank to scan all)</span></label>
+                <input type="text" id="filter-pattern" placeholder="e.g. user@domain.com, domain.com, or a regex…" style="width: 100%;">
+              </div>
+
+              <button class="btn btn-primary" id="btn-start-scan" style="margin-top: 22px; height: 45px;">Scan Source</button>
+            </div>
+
+            <!-- Toggle for Advanced Filters -->
+            <div style="display: flex; gap: 12px; margin-top: 12px;">
+              <button class="btn btn-secondary btn-sm" id="btn-toggle-advanced-filters">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" id="advanced-toggle-icon">
+                  <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+                Show Advanced Filters
+              </button>
+            </div>
+
+            <!-- Advanced Filters Drawer -->
+            <div id="advanced-filters-container" class="hidden" style="border-top: 1px solid var(--border-color); padding-top: 16px; margin-top: 12px;">
+              <div class="form-row flex-row gap-24" style="flex-wrap: wrap;">
+                <!-- MIME Filter Group -->
+                <div class="form-group" style="flex: 1.5; min-width: 280px; margin-bottom: 0;">
+                  <label style="margin-bottom: 12px; display: block;">MIME Types</label>
+                  <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 10px;">
+                    <label class="custom-checkbox" style="padding-left: 24px; text-transform: none; color: var(--text-primary);">
+                      <input type="checkbox" id="mime-all" checked>
+                      <span class="checkmark"></span>
+                      All File Types
+                    </label>
+                    <label class="custom-checkbox" style="padding-left: 24px; text-transform: none;">
+                      <input type="checkbox" class="mime-checkbox" value="google-apps" checked disabled>
+                      <span class="checkmark"></span>
+                      Google Workspace Files
+                    </label>
+                    <label class="custom-checkbox" style="padding-left: 24px; text-transform: none;">
+                      <input type="checkbox" class="mime-checkbox" value="pdf" checked disabled>
+                      <span class="checkmark"></span>
+                      PDFs
+                    </label>
+                    <label class="custom-checkbox" style="padding-left: 24px; text-transform: none;">
+                      <input type="checkbox" class="mime-checkbox" value="image" checked disabled>
+                      <span class="checkmark"></span>
+                      Images
+                    </label>
+                    <label class="custom-checkbox" style="padding-left: 24px; text-transform: none;">
+                      <input type="checkbox" class="mime-checkbox" value="video" checked disabled>
+                      <span class="checkmark"></span>
+                      Videos
+                    </label>
+                    <label class="custom-checkbox" style="padding-left: 24px; text-transform: none;">
+                      <input type="checkbox" class="mime-checkbox" value="other" checked disabled>
+                      <span class="checkmark"></span>
+                      Other Files
+                    </label>
+                  </div>
+                </div>
+
+                <!-- Date Filter Group -->
+                <div class="form-group flex-row gap-16" style="flex: 1; min-width: 250px; flex-direction: row; margin-bottom: 0;">
+                  <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                    <label for="filter-date-after">Modified After</label>
+                    <input type="date" id="filter-date-after" style="background-color: rgba(0, 0, 0, 0.2); border: 1px solid var(--border-color); border-radius: var(--border-radius-md); padding: 10px 12px; color: var(--text-primary); outline: none;">
+                  </div>
+                  <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                    <label for="filter-date-before">Modified Before</label>
+                    <input type="date" id="filter-date-before" style="background-color: rgba(0, 0, 0, 0.2); border: 1px solid var(--border-color); border-radius: var(--border-radius-md); padding: 10px 12px; color: var(--text-primary); outline: none;">
+                  </div>
+                </div>
+
+                <!-- Scan Options Group -->
+                <div class="form-group" style="flex: 1; min-width: 200px; margin-bottom: 0;">
+                  <label style="margin-bottom: 12px; display: block;">Scan Options</label>
+                  <label class="custom-checkbox" style="padding-left: 24px; text-transform: none; color: var(--text-primary);">
+                    <input type="checkbox" id="scan-recurse-shared" checked>
+                    <span class="checkmark"></span>
+                    Recurse Shared Folders
+                  </label>
+                  <small class="form-help" style="margin-top: 6px;">Descend recursively into folders inside 'Shared with me'. Uncheck for super fast top-level-only scan.</small>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Scan Progress Card -->
+          <div class="card download-status-card hidden" id="scan-progress-card" style="margin-top: 12px;">
+            <div class="download-header-row">
+              <div class="download-status-info">
+                <h3 id="scan-status-text">Scanning folders...</h3>
+                <p id="scan-progress-detail">Crawling directory structures recursively</p>
+              </div>
+              <button class="btn btn-secondary danger btn-sm" id="btn-cancel-scan">Cancel Scan</button>
+            </div>
+            <div class="progress-bar-container">
+              <div class="progress-bar" id="scan-overall-bar" style="width: 50%; animation: pulse 1.5s infinite;"></div>
+            </div>
+            <div class="progress-stats-row">
+              <span id="scan-items-found">0 items matching filter found</span>
+            </div>
+          </div>
+
+          <!-- Scan Results Explorer -->
+          <div class="card explorer-card hidden" id="scan-results-card" style="margin-top: 12px;">
+            <div class="explorer-tree-header">
+              <span style="font-weight: 600; font-size: 15px;">Eligible Items Preview</span>
+              <div class="checkbox-container select-all-wrapper">
+                <label class="custom-checkbox">
+                  <input type="checkbox" id="checkbox-select-all" checked>
+                  <span class="checkmark"></span>
+                  <span class="checkbox-label">Select All</span>
+                </label>
+              </div>
+            </div>
+
+            <!-- Scrollable list of matched files -->
+            <div class="queue-list" id="scan-results-list" style="overflow-y: auto; height: 100%;">
+              <!-- Populated dynamically -->
+            </div>
+
+            <!-- Launch Transfer Bar -->
+            <div class="explorer-bottom-bar" style="border-top: 1px solid var(--border-color); padding: 18px 24px; margin-top: auto;">
+              <div class="selection-summary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                  <line x1="9" y1="15" x2="15" y2="15" />
+                  <line x1="9" y1="19" x2="15" y2="19" />
+                </svg>
+                <span id="selection-summary-text">No items selected</span>
+              </div>
+              <div style="display: flex; gap: 12px;">
+                <button class="btn btn-secondary btn-lg" id="btn-start-dry-run" disabled>Preview Migration (Dry Run)</button>
+                <button class="btn btn-primary btn-lg" id="btn-start-transfer" disabled>Start Migration</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3. Transfer Queue Tab -->
+      <section id="tab-transfer" class="tab-content">
+        <div class="view-header">
+          <h1 class="view-title">Transfer Queue</h1>
+          <p class="view-subtitle">Monitor the status of your ongoing file moves, permissions restoration, and logs.</p>
+        </div>
+
+        <div class="download-layout">
+          <!-- Last Transfer Run Banner -->
+          <div id="last-results-banner" class="checkpoint-banner hidden" style="background: rgba(99, 102, 241, 0.12); border-color: rgba(99, 102, 241, 0.25); margin-bottom: 20px;">
+            <div class="checkpoint-banner-content">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20" style="color: var(--color-accent);">
+                <circle cx="12" cy="12" r="10" />
+                <polyline points="12 6 12 12 16 14" />
+              </svg>
+              <span id="last-results-banner-text">Viewing results from the last transfer run.</span>
+            </div>
+            <div class="checkpoint-banner-actions">
+              <button class="btn btn-sm btn-secondary" id="btn-clear-last-results">Clear Results</button>
+            </div>
+          </div>
+          <!-- Overall Status Card -->
+          <div class="card download-status-card">
+            <div class="download-header-row">
+              <div class="download-status-info">
+                <h3 id="transfer-overall-status">Preparing Transfer...</h3>
+                <p id="transfer-overall-detail">Resolving destination paths</p>
+              </div>
+              <div style="display: flex; gap: 12px; align-items: center;">
+                <button class="btn btn-accent hidden" id="btn-export-csv">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>
+                  </svg>
+                  Download CSV Report
+                </button>
+                <button class="btn btn-primary hidden" id="btn-confirm-migration">Confirm & Start Migration</button>
+                <button class="btn btn-secondary danger" id="btn-cancel-transfer">Cancel Transfer</button>
+              </div>
+            </div>
+
+            <div class="progress-bar-container">
+              <div class="progress-bar" id="transfer-overall-bar" style="width: 0%;"></div>
+            </div>
+
+            <div class="progress-stats-row">
+              <span id="transfer-stats-count">0 / 0 files completed</span>
+              <span id="transfer-failures-count" style="color: var(--color-error); font-weight: 600;">0 failures</span>
+            </div>
+          </div>
+
+          <!-- Transfer Tasks List -->
+          <div class="card queue-card">
+            <div class="queue-header">
+              <span>File Name & Relative Destination Path</span>
+              <span>Size</span>
+              <span>Status & Details</span>
+            </div>
+            <div class="queue-list" id="transfer-queue-list">
+              <!-- Dynamically populated files -->
+            </div>
+          </div>
+
+          <!-- Live Activity Log Viewer -->
+          <div class="card log-viewer-card" style="margin-top: 20px; padding: 20px;">
+            <div class="log-viewer-header" style="display: flex; align-items: center; justify-content: space-between; cursor: pointer;" id="btn-toggle-live-log">
+              <h2 class="card-title" style="margin-bottom: 0; font-size: 15px; display: flex; align-items: center; gap: 8px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                  <polyline points="14 2 14 8 20 8" />
+                  <line x1="16" y1="13" x2="8" y2="13" />
+                  <line x1="16" y1="17" x2="8" y2="17" />
+                </svg>
+                Live Activity Log
+              </h2>
+              <button class="btn btn-secondary btn-sm" id="btn-toggle-live-log-btn">Show Log</button>
+            </div>
+            <div id="live-log-container" class="hidden" style="margin-top: 12px; background-color: #05070c; border: 1px solid var(--border-color); border-radius: var(--border-radius-md); padding: 12px 16px; font-family: monospace; font-size: 12px; height: 180px; overflow-y: auto; color: #10b981; line-height: 1.5; white-space: pre-wrap; word-break: break-all;">
+              <div style="color: #6b7280;">No active logs yet. Real-time details will stream here during scan or transfer.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 4. Settings Tab -->
+      <section id="tab-settings" class="tab-content">
+        <div class="view-header">
+          <h1 class="view-title">Settings</h1>
+          <p class="view-subtitle">Configure OAuth credentials, shortcut expansion rules, duplicate collisions, and inspect log outputs.</p>
+        </div>
+
+        <div class="settings-wrapper">
+          <div class="settings-scroll-area">
+            <!-- GCP Credentials -->
+            <div class="card settings-card">
+              <h2 class="settings-section-title">1. GCP OAuth Credentials</h2>
+              <p class="settings-section-desc">
+                Provide OAuth credentials. Make sure to download a desktop client credential file and import it below.
+              </p>
+              <div style="margin-bottom: 18px; display: flex; align-items: center; gap: 12px;">
+                <button class="btn btn-secondary" id="btn-import-json">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                  </svg>
+                  Import Credentials JSON
+                </button>
+              </div>
+              <div class="form-row">
+                <div class="form-group w-half">
+                  <label for="settings-client-id">OAuth Client ID</label>
+                  <input type="text" id="settings-client-id" placeholder="Client ID from GCP">
+                </div>
+                <div class="form-group w-half">
+                  <label for="settings-client-secret">OAuth Client Secret</label>
+                  <input type="password" id="settings-client-secret" placeholder="Client Secret from GCP">
+                </div>
+              </div>
+            </div>
+
+            <!-- Migration & Rules Config -->
+            <div class="card settings-card">
+              <h2 class="settings-section-title">2. Transfer Rules Configuration</h2>
+              <p class="settings-section-desc">Manage folder replication behaviors, shortcut scanning, and fail-safe copies.</p>
+
+              <!-- Duplicate collision selector -->
+              <div class="form-group" style="max-width: 350px;">
+                <label for="settings-collision">Collision Action (If target file exists)</label>
+                <div class="select-wrapper">
+                  <select id="settings-collision">
+                    <option value="skip">Skip Transfer (Default)</option>
+                    <option value="rename">Rename File (e.g. File (1).ext)</option>
+                    <option value="duplicate">Create Duplicate File</option>
+                  </select>
+                </div>
+              </div>
+
+              <!-- Concurrency slider/input -->
+              <div class="form-group" style="max-width: 350px; margin-top: 16px;">
+                <label for="settings-concurrency">Concurrent File Transfers: <span id="settings-concurrency-value">3</span></label>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                  <input type="range" id="settings-concurrency" min="1" max="5" value="3" style="flex-grow: 1;">
+                </div>
+                <small class="form-help">
+                  Set number of concurrent transfers (1 to 5). Higher values speed up transfer but increase risks of Google Drive API rate limit exceptions.
+                </small>
+              </div>
+
+              <!-- Structure Option selector -->
+              <div class="form-group" style="max-width: 350px; margin-top: 16px;">
+                <label for="settings-structure-option">Structure Option</label>
+                <div class="select-wrapper">
+                  <select id="settings-structure-option">
+                    <option value="recreate">Recreate source folder hierarchy</option>
+                    <option value="flat">Flat structure (all files in target folder)</option>
+                  </select>
+                </div>
+                <small class="form-help">
+                  Choose whether to recreate the folder directory hierarchy or place all items flatly under the target destination.
+                </small>
+              </div>
+
+              <!-- Leave shortcut at source checkbox -->
+              <div class="form-group" style="margin-top: 16px;">
+                <label class="custom-checkbox" style="padding-left: 28px;">
+                  <input type="checkbox" id="settings-leave-shortcut">
+                  <span class="checkmark"></span>
+                  <span class="checkbox-label" style="font-weight: 500; text-transform: none; color: var(--text-primary);">
+                    Move and leave shortcut in source folder
+                  </span>
+                </label>
+                <small class="form-help" style="margin-left: 28px; margin-top: 4px;">
+                  Default is Off. If checked, when a file is natively moved to the Shared Drive, a shortcut is left in its original source folder pointing to the moved file to preserve access paths.
+                </small>
+              </div>
+
+              <!-- Shortcuts recursion checkbox -->
+              <div class="form-group" style="margin-top: 16px;">
+                <label class="custom-checkbox" style="padding-left: 28px;">
+                  <input type="checkbox" id="settings-resolve-shortcuts">
+                  <span class="checkmark"></span>
+                  <span class="checkbox-label" style="font-weight: 500; text-transform: none; color: var(--text-primary);">
+                    Resolve shortcut folders and proceed with recursive migration/searching
+                  </span>
+                </label>
+                <small class="form-help" style="margin-left: 28px; margin-top: 4px;">
+                  Default is Off. If checked, if the scanner encounters a shortcut to a folder, it will resolve and follow it, scanning the target folder's contents recursively.
+                </small>
+              </div>
+
+              <!-- Copy fallback checkbox -->
+              <div class="form-group" style="margin-top: 16px;">
+                <label class="custom-checkbox" style="padding-left: 28px;">
+                  <input type="checkbox" id="settings-copy-fallback">
+                  <span class="checkmark"></span>
+                  <span class="checkbox-label" style="font-weight: 500; text-transform: none; color: var(--text-primary);">
+                    Make a copy of the file if a direct move is unavailable
+                  </span>
+                </label>
+                <small class="form-help" style="margin-left: 28px; margin-top: 4px;">
+                  Default is Off. If moving a file fails (e.g. because of cross-domain policy restrictions), the app copies the file into the destination instead, preserving its direct sharing permissions.
+                </small>
+              </div>
+
+              <!-- Ensure accessibility on move checkbox -->
+              <div class="form-group" style="margin-top: 16px;">
+                <label class="custom-checkbox" style="padding-left: 28px;">
+                  <input type="checkbox" id="settings-accessibility-check">
+                  <span class="checkmark"></span>
+                  <span class="checkbox-label" style="font-weight: 500; text-transform: none; color: var(--text-primary);">
+                    Ensure accessibility pre-flight check
+                  </span>
+                </label>
+                <small class="form-help" style="margin-left: 28px; margin-top: 4px;">
+                  Default is Off. If checked, the app queries the destination Shared Drive restrictions at startup to check if file owners would lose access, warning you with options to strip permissions, copy files instead, or cancel.
+                </small>
+              </div>
+            </div>
+
+            <!-- Inspect Logs -->
+            <div class="card settings-card">
+              <h2 class="settings-section-title">3. Action Log</h2>
+              <p class="settings-section-desc">Open the application log file to view detailed tracing of folder creation, scan entries, and moves.</p>
+              <div>
+                <button class="btn btn-secondary" id="btn-open-log">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                    <line x1="16" y1="13" x2="8" y2="13" />
+                    <line x1="16" y1="17" x2="8" y2="17" />
+                  </svg>
+                  Open Log File
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div class="settings-actions">
+            <button class="btn btn-secondary danger" id="btn-reset-auth">Reset App Credentials</button>
+            <div style="flex-grow: 1;"></div>
+            <div id="settings-save-success" class="settings-toast success hidden">Settings saved successfully!</div>
+            <div id="settings-save-error" class="settings-toast error hidden">Failed to save settings.</div>
+            <button class="btn btn-primary btn-lg" id="btn-save-settings">Save All Settings</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="renderer.js" type="module"></script>
+</body>
+
+</html>
