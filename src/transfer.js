@@ -1,4 +1,4 @@
-import { escapeHtml, formatBytes } from './utils.js';
+import { escapeHtml, formatBytes, copyTextToClipboard } from './utils.js';
 
 // --- DOM ELEMENTS ---
 const transferOverallStatus = document.getElementById('transfer-overall-status');
@@ -98,6 +98,27 @@ export function initTransferController(onTransferStartCallback) {
     }
   });
 
+  // Copy button event delegation for transfer queue list
+  transferQueueList.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.copy-btn');
+    if (btn) {
+      const name = btn.getAttribute('data-name');
+      if (name) {
+        const success = await copyTextToClipboard(name);
+        if (success) {
+          const textSpan = btn.querySelector('span');
+          const originalText = textSpan.innerText;
+          textSpan.innerText = 'Copied!';
+          btn.classList.add('copied');
+          setTimeout(() => {
+            textSpan.innerText = originalText;
+            btn.classList.remove('copied');
+          }, 1200);
+        }
+      }
+    }
+  });
+
   // Bind IPC listeners
   
   // 1. Transfer Queue Initiated
@@ -156,10 +177,31 @@ export function initTransferController(onTransferStartCallback) {
           }
         }
         
+        const displayFileId = (outcome && outcome.newFileId) || file.id;
+
         row.innerHTML = `
           <div class="queue-name-col">
             <span class="queue-filename">${escapeHtml(file.name)}</span>
             <span class="queue-relpath">Destination: ${escapeHtml(file.relativePath || '/')}</span>
+            <div class="file-actions">
+              <button class="action-link copy-btn" data-name="${escapeHtml(file.name)}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+                <span>Copy Name</span>
+              </button>
+              ${displayFileId ? `
+              <a href="https://drive.google.com/open?id=${displayFileId}" target="_blank" class="action-link open-btn" id="open-drive-${index}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                  <polyline points="15 3 21 3 21 9"></polyline>
+                  <line x1="10" y1="14" x2="21" y2="3"></line>
+                </svg>
+                <span>Open in Drive</span>
+              </a>
+              ` : ''}
+            </div>
           </div>
           <div class="queue-size">${formatBytes(file.size)}</div>
           <div class="queue-status-col" id="status-col-${index}">
@@ -206,10 +248,32 @@ export function initTransferController(onTransferStartCallback) {
       row = document.createElement('div');
       row.className = 'queue-row';
       row.id = `transfer-row-${file.index}`;
+      const origFile = activeFiles[file.index];
+      const displayFileId = origFile ? origFile.id : '';
+
       row.innerHTML = `
         <div class="queue-name-col">
           <span class="queue-filename">${escapeHtml(file.name)}</span>
           <span class="queue-relpath">Destination: ${escapeHtml(file.relativePath || '/')}</span>
+          <div class="file-actions">
+            <button class="action-link copy-btn" data-name="${escapeHtml(file.name)}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              <span>Copy Name</span>
+            </button>
+            ${displayFileId ? `
+            <a href="https://drive.google.com/open?id=${displayFileId}" target="_blank" class="action-link open-btn" id="open-drive-${file.index}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                <polyline points="15 3 21 3 21 9"></polyline>
+                <line x1="10" y1="14" x2="21" y2="3"></line>
+              </svg>
+              <span>Open in Drive</span>
+            </a>
+            ` : ''}
+          </div>
         </div>
         <div class="queue-size">${formatBytes(file.size)}</div>
         <div class="queue-status-col" id="status-col-${file.index}">
@@ -222,7 +286,6 @@ export function initTransferController(onTransferStartCallback) {
     }
   });
 
-  // 4. File completed processing (moved, copied, skipped or errored)
   window.api.onTransferFileComplete((result) => {
     const statusCol = document.getElementById(`status-col-${result.index}`);
     if (!statusCol) return;
@@ -231,8 +294,15 @@ export function initTransferController(onTransferStartCallback) {
       success: result.success,
       skipped: result.skipped,
       copied: result.copied,
-      error: result.error
+      error: result.error,
+      newFileId: result.newFileId
     };
+
+    // Update Open in Drive link if a new file ID was generated (e.g. copied fallback)
+    const openLink = document.getElementById(`open-drive-${result.index}`);
+    if (openLink && result.success && result.copied && result.newFileId) {
+      openLink.href = `https://drive.google.com/open?id=${result.newFileId}`;
+    }
 
     if (result.success) {
       if (result.skipped) {
@@ -335,10 +405,32 @@ export function initTransferController(onTransferStartCallback) {
       row = document.createElement('div');
       row.className = 'queue-row';
       row.id = `transfer-row-${file.index}`;
+      const origFile = activeFiles[file.index];
+      const displayFileId = origFile ? origFile.id : '';
+
       row.innerHTML = `
         <div class="queue-name-col">
           <span class="queue-filename">${escapeHtml(file.name)}</span>
           <span class="queue-relpath">Simulated Destination: ${escapeHtml(file.relativePath || '/')}</span>
+          <div class="file-actions">
+            <button class="action-link copy-btn" data-name="${escapeHtml(file.name)}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+              </svg>
+              <span>Copy Name</span>
+            </button>
+            ${displayFileId ? `
+            <a href="https://drive.google.com/open?id=${displayFileId}" target="_blank" class="action-link open-btn" id="open-drive-${file.index}">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                <polyline points="15 3 21 3 21 9"></polyline>
+                <line x1="10" y1="14" x2="21" y2="3"></line>
+              </svg>
+              <span>Open in Drive</span>
+            </a>
+            ` : ''}
+          </div>
         </div>
         <div class="queue-size">${formatBytes(file.size)}</div>
         <div class="queue-status-col" id="status-col-${file.index}">
@@ -486,10 +578,31 @@ export async function loadLastResults() {
           statusBadge = `<span class="status-badge pending">Pending</span>`;
         }
 
+        const displayFileId = (outcome && outcome.newFileId) || file.id;
+
         row.innerHTML = `
           <div class="queue-name-col">
             <span class="queue-filename">${escapeHtml(file.name)}</span>
             <span class="queue-relpath">Destination: ${escapeHtml(file.relativePath || '/')}</span>
+            <div class="file-actions">
+              <button class="action-link copy-btn" data-name="${escapeHtml(file.name)}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+                <span>Copy Name</span>
+              </button>
+              ${displayFileId ? `
+              <a href="https://drive.google.com/open?id=${displayFileId}" target="_blank" class="action-link open-btn" id="open-drive-${index}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+                  <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                  <polyline points="15 3 21 3 21 9"></polyline>
+                  <line x1="10" y1="14" x2="21" y2="3"></line>
+                </svg>
+                <span>Open in Drive</span>
+              </a>
+              ` : ''}
+            </div>
           </div>
           <div class="queue-size">${formatBytes(file.size)}</div>
           <div class="queue-status-col" id="status-col-${index}">

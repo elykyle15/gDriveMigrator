@@ -1180,3 +1180,47 @@ select option {
     transform: translateY(0);
   }
 }
+
+/* File Actions Styling (Copy Name / Open in Drive) */
+.file-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 5px;
+  font-size: 11px;
+}
+
+.action-link {
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  text-decoration: none;
+  transition: color 0.2s ease, transform 0.1s ease;
+  user-select: none;
+}
+
+.action-link:hover {
+  color: var(--color-accent);
+}
+
+.action-link.open-btn:hover {
+  color: var(--color-success);
+}
+
+.action-link svg {
+  stroke: currentColor;
+  flex-shrink: 0;
+}
+
+.action-link:active {
+  transform: scale(0.95);
+}
+
+.action-link.copied {
+  color: var(--color-success) !important;
+  font-weight: 600;
+}

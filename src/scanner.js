@@ -1,4 +1,4 @@
-import { escapeHtml, formatBytes } from './utils.js';
+import { escapeHtml, formatBytes, copyTextToClipboard } from './utils.js';
 import { verifiedSourceId, verifiedDestId } from './auth.js';
 
 // --- STATE ---
@@ -130,6 +130,27 @@ export function initScannerController() {
     updateSelectionSummary();
   });
 
+  // Copy button event delegation for scan results list
+  scanResultsList.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.copy-btn');
+    if (btn) {
+      const name = btn.getAttribute('data-name');
+      if (name) {
+        const success = await copyTextToClipboard(name);
+        if (success) {
+          const textSpan = btn.querySelector('span');
+          const originalText = textSpan.innerText;
+          textSpan.innerText = 'Copied!';
+          btn.classList.add('copied');
+          setTimeout(() => {
+            textSpan.innerText = originalText;
+            btn.classList.remove('copied');
+          }, 1200);
+        }
+      }
+    }
+  });
+
   // Bind IPC listeners
   window.api.onScanStarted(() => {
     scanProgressCard.classList.remove('hidden');
@@ -255,6 +276,25 @@ function renderScanResults() {
         <span class="queue-relpath" style="padding-left: 28px; margin-top: 4px;">
           Owner: <strong>${escapeHtml(file.ownerEmail)}</strong> &bull; Relative path: ${escapeHtml(file.relativePath)}
         </span>
+        <div class="file-actions" style="padding-left: 28px;">
+          <button class="action-link copy-btn" data-name="${escapeHtml(file.name)}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            <span>Copy Name</span>
+          </button>
+          ${file.id ? `
+          <a href="https://drive.google.com/open?id=${file.id}" target="_blank" class="action-link open-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="12" height="12">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+              <polyline points="15 3 21 3 21 9"></polyline>
+              <line x1="10" y1="14" x2="21" y2="3"></line>
+            </svg>
+            <span>Open in Drive</span>
+          </a>
+          ` : ''}
+        </div>
       </div>
       <div class="queue-size">${formatBytes(file.size)}</div>
       <div class="queue-status-col">
