@@ -143,5 +143,54 @@ contextBridge.exposeInMainWorld('api', {
     return () => ipcRenderer.removeListener('log-line', handler);
   },
 
+  // Lister Controls
+  startListerScan: (targetId) => ipcRenderer.invoke('start-lister-scan', { targetId }),
+  cancelListerScan: () => ipcRenderer.invoke('cancel-lister-scan'),
+  showItemInFolder: (filePath) => ipcRenderer.invoke('show-item-in-folder', filePath),
+  openPath: (filePath) => ipcRenderer.invoke('open-path', filePath),
+
+  // Lister Listeners
+  onListerStarted: (callback) => {
+    const handler = () => callback();
+    ipcRenderer.on('lister-started', handler);
+    return () => ipcRenderer.removeListener('lister-started', handler);
+  },
+  onListerProgress: (callback) => {
+    const handler = (event, stats) => callback(stats);
+    ipcRenderer.on('lister-progress', handler);
+    return () => ipcRenderer.removeListener('lister-progress', handler);
+  },
+  onListerSaving: (callback) => {
+    const handler = () => callback();
+    ipcRenderer.on('lister-saving', handler);
+    return () => ipcRenderer.removeListener('lister-saving', handler);
+  },
+  onListerSuccess: (callback) => {
+    const handler = (event, filePath) => callback(filePath);
+    ipcRenderer.on('lister-success', handler);
+    return () => ipcRenderer.removeListener('lister-success', handler);
+  },
+  onListerCancelled: (callback) => {
+    const handler = () => callback();
+    ipcRenderer.on('lister-cancelled', handler);
+    return () => ipcRenderer.removeListener('lister-cancelled', handler);
+  },
+  onListerCancelledSave: (callback) => {
+    const handler = () => callback();
+    ipcRenderer.on('lister-cancelled-save', handler);
+    return () => ipcRenderer.removeListener('lister-cancelled-save', handler);
+  },
+  onListerEmpty: (callback) => {
+    const handler = () => callback();
+    ipcRenderer.on('lister-empty', handler);
+    return () => ipcRenderer.removeListener('lister-empty', handler);
+  },
+  onListerError: (callback) => {
+    const handler = (event, message) => callback(message);
+    ipcRenderer.on('lister-error', handler);
+    return () => ipcRenderer.removeListener('lister-error', handler);
+  },
+
   getPlatform: () => process.platform
 });
+

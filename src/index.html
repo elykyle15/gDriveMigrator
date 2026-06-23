@@ -50,6 +50,16 @@
           </svg>
           Transfer Queue
         </button>
+        <button class="nav-item" data-tab="lister" id="nav-lister" disabled>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+            <polyline points="14 2 14 8 20 8" />
+            <line x1="16" y1="13" x2="8" y2="13" />
+            <line x1="16" y1="17" x2="8" y2="17" />
+            <polyline points="10 9 9 9 8 9" />
+          </svg>
+          Drive Lister
+        </button>
         <button class="nav-item" data-tab="settings">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="3" />
@@ -462,6 +472,95 @@
             <div id="live-log-container" class="hidden" style="margin-top: 12px; background-color: #05070c; border: 1px solid var(--border-color); border-radius: var(--border-radius-md); padding: 12px 16px; font-family: monospace; font-size: 12px; height: 180px; overflow-y: auto; color: #10b981; line-height: 1.5; white-space: pre-wrap; word-break: break-all;">
               <div style="color: #6b7280;">No active logs yet. Real-time details will stream here during scan or transfer.</div>
             </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 5. Lister Tab -->
+      <section id="tab-lister" class="tab-content">
+        <div class="view-header">
+          <h1 class="view-title">Drive Lister</h1>
+          <p class="view-subtitle">Recursively scan a folder or Shared Drive and export all files, folders, and ownership details to a CSV.</p>
+        </div>
+
+        <div class="cards-grid">
+          <!-- Lister Control Card -->
+          <div class="card selector-card" id="lister-card">
+            <div class="card-header">
+              <h2 class="card-title">Scan & Export Settings</h2>
+              <p class="card-subtitle">Select the target drive/folder to scan, then click "Start Scan".</p>
+            </div>
+
+            <div class="tabs-slider-container" role="tablist" aria-label="Metadata scan source">
+              <div class="tabs-slider">
+                <button class="slider-tab active" id="lister-tab-toggle-custom" role="tab" aria-selected="true" aria-controls="lister-form-custom-id">Custom ID</button>
+                <button class="slider-tab" id="lister-tab-toggle-list" role="tab" aria-selected="false" aria-controls="lister-form-list-select">My Shared Drives</button>
+              </div>
+            </div>
+
+            <!-- Custom ID Input Form -->
+            <div class="selector-form active" id="lister-form-custom-id" role="tabpanel" aria-labelledby="lister-tab-toggle-custom">
+              <div class="form-group">
+                <label for="lister-id-input">Target Folder ID or Shared Drive ID</label>
+                <div class="input-with-button" style="display: flex; gap: 12px; margin-top: 4px;">
+                  <input type="text" id="lister-id-input" placeholder="e.g. root (My Drive) or custom folder/drive ID" autocomplete="off" style="flex-grow: 1;">
+                  <button class="btn btn-accent" id="btn-start-lister-scan">Start Scan</button>
+                </div>
+                <small class="form-help" style="margin-top: 4px;">Enter a Folder ID, Shared Drive ID, or leave blank/enter "root" for My Drive.</small>
+              </div>
+            </div>
+
+            <!-- List Dropdown Form -->
+            <div class="selector-form hidden" id="lister-form-list-select" role="tabpanel" aria-labelledby="lister-tab-toggle-list">
+              <div class="form-group">
+                <label for="lister-drive-list-select">Select Shared Drive</label>
+                <div class="select-wrapper">
+                  <select id="lister-drive-list-select">
+                    <option value="" disabled selected>Loading Shared Drives...</option>
+                  </select>
+                </div>
+              </div>
+              <button class="btn btn-accent w-full" id="btn-start-lister-scan-list" disabled style="margin-top: 12px;">Start Scan Selected Drive</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Scan Progress Card -->
+        <div class="card download-status-card hidden" id="lister-progress-card" style="margin-top: 24px; max-width: 600px;">
+          <div class="download-header-row" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+            <div class="download-status-info" style="flex: 1; min-width: 0;">
+              <h3 id="lister-progress-status">Preparing Scan...</h3>
+              <p id="lister-progress-detail" style="word-break: break-all; margin-top: 4px; font-size: 13px; color: var(--text-secondary);">Initializing connection...</p>
+            </div>
+            <button class="btn btn-secondary danger btn-sm" id="btn-cancel-lister-scan" style="margin-left: 16px; flex-shrink: 0;">Cancel Scan</button>
+          </div>
+
+          <div class="progress-bar-container" style="height: 8px; background-color: rgba(255, 255, 255, 0.05); border-radius: 4px; overflow: hidden; margin-bottom: 12px;">
+            <div class="progress-bar" id="lister-overall-bar" style="width: 0%; height: 100%; background: linear-gradient(90deg, var(--color-accent) 0%, #a5b4fc 100%); border-radius: 4px; transition: width 0.3s ease;"></div>
+          </div>
+
+          <div class="progress-stats-row" style="display: flex; justify-content: space-between; font-size: 13px; color: var(--text-muted);">
+            <span id="lister-files-count">0 items found</span>
+            <span id="lister-status-text">Scanning...</span>
+          </div>
+
+          <div class="lister-action-buttons hidden" id="lister-completed-actions" style="margin-top: 16px; display: flex; gap: 12px; justify-content: flex-end; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 16px;">
+            <button class="btn btn-secondary btn-sm" id="btn-reveal-file" style="display: inline-flex; align-items: center; gap: 6px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px;">
+                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+              </svg>
+              <span id="btn-reveal-file-text">Reveal in Finder</span>
+            </button>
+            <button class="btn btn-primary btn-sm" id="btn-open-file" style="display: inline-flex; align-items: center; gap: 6px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px;">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg>
+              <span>Open File</span>
+            </button>
           </div>
         </div>
       </section>

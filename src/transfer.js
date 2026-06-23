@@ -14,6 +14,7 @@ const navConnect = document.querySelector('[data-tab="connect"]');
 const navScan = document.querySelector('[data-tab="scan"]');
 const navTransfer = document.querySelector('[data-tab="transfer"]');
 const navSettings = document.querySelector('[data-tab="settings"]');
+const navLister = document.querySelector('[data-tab="lister"]');
 const btnExportCsv = document.getElementById('btn-export-csv');
 
 const btnToggleLiveLog = document.getElementById('btn-toggle-live-log');
@@ -645,10 +646,12 @@ function setNavigationLocked(isLocked) {
     navScan.setAttribute('disabled', 'true');
     navTransfer.setAttribute('disabled', 'true');
     navSettings.setAttribute('disabled', 'true');
+    if (navLister) navLister.setAttribute('disabled', 'true');
   } else {
     navConnect.removeAttribute('disabled');
     navScan.removeAttribute('disabled');
     navTransfer.removeAttribute('disabled');
     navSettings.removeAttribute('disabled');
+    if (navLister) navLister.removeAttribute('disabled');
   }
 }

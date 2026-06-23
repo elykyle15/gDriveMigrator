@@ -1,6 +1,6 @@
 # G-Drive Migrator (Move to Shared Drive)
 
-An elegant, high-performance desktop application designed to recursively scan Google Drive folders or Shared Drives, filter files by owner email, MIME type, or date range, and safely transfer them into a destination Google Shared Drive.
+An elegant, high-performance desktop application designed to recursively scan Google Drive folders or Shared Drives, filter files by owner email, MIME type, or date range, safely transfer them into a destination Google Shared Drive, or export comprehensive file lists and ownership details to CSV.
 
 ---
 
@@ -128,6 +128,23 @@ Before using the migrator, you need to import your credentials and set your tran
 3. Click **Preview Migration (Dry Run)** to test the transfer configuration, check path merges, and preview warnings.
 4. Click **Start Migration** to begin transferring the files into the target Shared Drive.
 5. Monitor progress, review the live log terminal, or download a final **CSV Report** showing the status of each transferred item.
+
+---
+
+## 📊 4. How to Use Drive Lister (CSV Metadata Export)
+
+The **Drive Lister** tool allows you to recursively scan any Google Drive folder or Shared Drive and export a complete metadata list of all files, subfolders, shortcuts, sizes, and owners to a CSV file.
+
+1. Navigate to the **Drive Lister** tab in the left-hand sidebar.
+2. Select your **Scan Source**:
+   * **Custom ID**: Enter a Folder ID or Shared Drive ID. If you leave this field blank (or enter `root`), it will default to your entire personal **My Drive**.
+   * **My Shared Drives**: Select one of your authorized Shared Drives from the dropdown list.
+3. Click **Start Scan** (or **Start Scan Selected Drive**).
+4. A file dialog will prompt you to select the save path and filename for your `.csv` export.
+5. Once you choose where to save the file, the scanner will connect to Google Drive and recursively crawl the directory structure using parallel queue processing.
+6. During the scan, you can monitor the live counter of discovered items.
+7. If needed, click **Cancel Scan** to abort the operation (any temporary files will be discarded).
+8. Once completed, you can click **Reveal in Finder** (or **Reveal in File Explorer** on Windows) or **Open File** to immediately inspect your exported CSV!
 
 ---
 

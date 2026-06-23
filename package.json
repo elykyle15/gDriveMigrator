@@ -1,6 +1,6 @@
 {
   "name": "movetosharedrive",
-  "version": "1.0.0",
+  "version": "1.1.1",
   "description": "Recursively scan Google Drive folders or Shared Drives, filter files by owner email, and transfer them into a Shared Drive.",
   "main": "main.js",
   "scripts": {

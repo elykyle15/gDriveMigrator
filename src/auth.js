@@ -65,6 +65,7 @@ const toastSaveError = document.getElementById('settings-save-error');
 
 const navScan = document.getElementById('nav-scan');
 const navTransfer = document.getElementById('nav-transfer');
+const navLister = document.getElementById('nav-lister');
 
 // --- EXPORTED FUNCTIONS ---
 
@@ -348,6 +349,7 @@ export async function checkAuthentication() {
 
     sourceSelectorCard.classList.remove('disabled');
     destSelectorCard.classList.remove('disabled');
+    if (navLister) navLister.removeAttribute('disabled');
 
     // Only show tip widget for non-academic (.edu) authenticated users
     const isEdu = email.toLowerCase().endsWith('.edu');
@@ -367,6 +369,7 @@ export async function checkAuthentication() {
     destSelectorCard.classList.add('disabled');
     navScan.setAttribute('disabled', 'true');
     navTransfer.setAttribute('disabled', 'true');
+    if (navLister) navLister.setAttribute('disabled', 'true');
 
     // Hide tip widget if disconnected
     tipLink.classList.add('hidden');

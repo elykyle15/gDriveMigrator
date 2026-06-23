@@ -1,6 +1,7 @@
 import { initAuthAndSettings } from './auth.js';
 import { initScannerController, getScannedFilesSelection } from './scanner.js';
 import { initTransferController, loadLastResults } from './transfer.js';
+import { initListerController } from './lister.js';
 
 // --- TAB NAVIGATION SYSTEM ---
 const navItems = document.querySelectorAll('.nav-item');
@@ -144,4 +145,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       btnStartDryRun.disabled = false;
     }
   });
+
+  // 6. Initialize Lister Controller
+  initListerController();
 });

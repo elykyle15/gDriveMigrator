@@ -1965,3 +1965,248 @@ ipcMain.handle('cancel-transfer', () => {
   }
   return { success: false };
 });
+
+// --- LISTER STATE ---
+let currentListerTask = null;
+
+// Helper to escape values for RFC 4180 CSV compliance
+function escapeCSV(val) {
+  if (val === undefined || val === null) return '';
+  const str = String(val);
+  if (/[",\r\n]/.test(str)) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+}
+
+async function getFolderNameHelper(drive, folderId) {
+  if (folderId === 'root') return 'My Drive';
+  if (folderId === 'shared-with-me') return 'Shared With Me';
+  try {
+    const sdResponse = await drive.drives.get({ driveId: folderId });
+    return sdResponse.data.name;
+  } catch (sdErr) {
+    try {
+      const response = await drive.files.get({
+        fileId: folderId,
+        fields: 'name',
+        supportsAllDrives: true
+      });
+      return response.data.name;
+    } catch (err) {
+      return `Folder (${folderId})`;
+    }
+  }
+}
+
+// Handler for recursive file/folder scanning and CSV export
+ipcMain.handle('start-lister-scan', async (event, { targetId }) => {
+  if (currentListerTask) {
+    throw new Error('A metadata scan is already in progress.');
+  }
+
+  currentListerTask = { cancelled: false };
+
+  try {
+    const drive = await getDriveClient();
+    const driveName = await getFolderNameHelper(drive, targetId);
+
+    mainWindow.webContents.send('lister-started');
+    mainWindow.webContents.send('lister-saving'); // Temporarily show "Saving..." UI
+
+    // Prompt user to save the CSV file BEFORE scanning
+    const result = await dialog.showSaveDialog(mainWindow, {
+      title: 'Save Drive List CSV',
+      defaultPath: path.join(app.getPath('downloads'), `${sanitizeFilename(driveName)}_drive_list.csv`),
+      filters: [{ name: 'CSV Files', extensions: ['csv'] }]
+    });
+
+    if (result.canceled || !result.filePath) {
+      mainWindow.webContents.send('lister-cancelled-save');
+      currentListerTask = null;
+      return { status: 'cancelled-save' };
+    }
+
+    // Now restart the UI state to Scanning
+    mainWindow.webContents.send('lister-started');
+
+    const csvStream = fs.createWriteStream(result.filePath, 'utf8');
+    const headers = [
+      'ID', 'Name', 'Relative Path', 'Type', 'Mime Type', 'Size (Bytes)',
+      'Owner Name', 'Owner Email', 'Created Time', 'Modified Time', 'Parent ID', 'Drive Link'
+    ];
+    csvStream.write(headers.join(',') + '\r\n');
+
+    let itemsCount = 0;
+    const scannedFolderIds = new Set();
+    const folderQueue = [ { id: targetId, relPath: '' } ];
+    let activeWorkers = 0;
+
+    async function processFolder({ id: folderId, relPath: currentRelPath }) {
+      if (scannedFolderIds.has(folderId)) return;
+      scannedFolderIds.add(folderId);
+
+      let pageToken = null;
+      let folderContents = [];
+
+      do {
+        if (currentListerTask.cancelled) break;
+
+        const safeFolderId = folderId.replace(/[^a-zA-Z0-9_-]/g, '');
+        const query = folderId === 'shared-with-me'
+          ? 'sharedWithMe = true and trashed = false'
+          : `'${safeFolderId}' in parents and trashed = false`;
+
+        const response = await executeWithRetry(async () => {
+          return await drive.files.list({
+            q: query,
+            pageSize: 1000,
+            fields: 'nextPageToken, files(id, name, mimeType, size, owners(displayName, emailAddress), parents, createdTime, modifiedTime, shortcutDetails)',
+            supportsAllDrives: true,
+            includeItemsFromAllDrives: true,
+            pageToken: pageToken
+          });
+        }, 10, 1000); // Higher retry count to gracefully handle concurrency limits
+
+        if (response.data.files) {
+          folderContents = folderContents.concat(response.data.files);
+        }
+        pageToken = response.data.nextPageToken;
+      } while (pageToken);
+
+      if (currentListerTask.cancelled) return;
+
+      const rows = [];
+      for (const item of folderContents) {
+        const isShortcut = item.mimeType === 'application/vnd.google-apps.shortcut';
+        const targetMimeType = isShortcut && item.shortcutDetails ? item.shortcutDetails.targetMimeType : null;
+        const targetId = isShortcut && item.shortcutDetails ? item.shortcutDetails.targetId : item.id;
+        const isFolder = item.mimeType === 'application/vnd.google-apps.folder' || targetMimeType === 'application/vnd.google-apps.folder';
+
+        let ownerName = '';
+        let ownerEmail = '';
+        if (item.owners && item.owners.length > 0) {
+          ownerName = item.owners[0].displayName || '';
+          ownerEmail = item.owners[0].emailAddress || '';
+        }
+
+        const relativePath = path.join(currentRelPath, sanitizeFilename(item.name));
+        const itemType = isFolder ? 'Folder' : 'File';
+        const itemSize = isFolder ? '' : (item.size || '0');
+        const driveLink = `https://drive.google.com/open?id=${item.id}`;
+
+        rows.push([
+          item.id,
+          item.name,
+          relativePath,
+          itemType,
+          isShortcut ? (targetMimeType || item.mimeType) : item.mimeType,
+          itemSize,
+          ownerName,
+          ownerEmail,
+          item.createdTime || '',
+          item.modifiedTime || '',
+          folderId,
+          driveLink
+        ].map(escapeCSV).join(','));
+
+        itemsCount++;
+
+        if (isFolder) {
+          folderQueue.push({ id: targetId, relPath: relativePath });
+        }
+      }
+
+      if (rows.length > 0 && !currentListerTask.cancelled) {
+        csvStream.write(rows.join('\r\n') + '\r\n');
+      }
+
+      // Update UI with progress
+      mainWindow.webContents.send('lister-progress', {
+        itemsCount: itemsCount,
+        foldersScanned: scannedFolderIds.size
+      });
+    }
+
+    async function processQueue() {
+      while (!currentListerTask.cancelled) {
+        if (folderQueue.length === 0) {
+          if (activeWorkers === 0) {
+            return;
+          } else {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            continue;
+          }
+        }
+        
+        const task = folderQueue.shift();
+        activeWorkers++;
+        try {
+          await processFolder(task);
+        } catch (e) {
+          if (e.message !== 'Cancelled' && (!currentListerTask || !currentListerTask.cancelled)) {
+            console.error('Folder scan error', e);
+          }
+        } finally {
+          activeWorkers--;
+        }
+      }
+    }
+
+    const MAX_CONCURRENCY = 8;
+    const workers = [];
+    for (let i = 0; i < MAX_CONCURRENCY; i++) {
+      workers.push(processQueue());
+    }
+
+    await Promise.all(workers);
+
+    csvStream.end();
+
+    if (currentListerTask.cancelled) {
+      mainWindow.webContents.send('lister-cancelled');
+      currentListerTask = null;
+      try { fs.unlinkSync(result.filePath); } catch (_) {}
+      return { status: 'cancelled' };
+    }
+
+    if (itemsCount === 0) {
+      mainWindow.webContents.send('lister-empty');
+      currentListerTask = null;
+      try { fs.unlinkSync(result.filePath); } catch (_) {}
+      return { status: 'empty' };
+    }
+
+    mainWindow.webContents.send('lister-success', result.filePath);
+    currentListerTask = null;
+    return { status: 'completed', filePath: result.filePath };
+
+  } catch (err) {
+    console.error('Lister scan failed:', err);
+    mainWindow.webContents.send('lister-error', err.message);
+    currentListerTask = null;
+    throw err;
+  }
+});
+
+ipcMain.handle('cancel-lister-scan', () => {
+  if (currentListerTask) {
+    currentListerTask.cancelled = true;
+    return { success: true };
+  }
+  return { success: false };
+});
+
+ipcMain.handle('show-item-in-folder', async (event, filePath) => {
+  shell.showItemInFolder(filePath);
+  return true;
+});
+
+ipcMain.handle('open-path', async (event, filePath) => {
+  const err = await shell.openPath(filePath);
+  if (err) {
+    throw new Error(err);
+  }
+  return true;
+});
+
