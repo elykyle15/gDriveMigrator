@@ -20,6 +20,8 @@ If you received a pre-built version of this software (such as a `.dmg` file for 
 4. **Important**: Because the application is self-published and not signed with an Apple Developer account, macOS Gatekeeper may block it. To open it:
    * **Right-click** (or Control-click) the application icon and select **Open**.
    * In the confirmation dialog that appears, click **Open** again.
+Or:
+   * Go to **Settings > Privacy & Security** and click on **Open Anyway**.
 
 ---
 
